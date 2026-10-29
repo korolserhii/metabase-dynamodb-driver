@@ -10,6 +10,9 @@ on:
 env:
   METABASE_VERSION: v0.65.2.2
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -46,16 +49,28 @@ jobs:
 
       - name: Build the driver
         run: |
+          set -o pipefail
+          mkdir -p ci-logs
           echo '{:deps {metabase/dynamodb {:local/root "dynamodb"}}}' > modules/drivers/deps.edn
-          ./bin/build-driver.sh dynamodb
+          ./bin/build-driver.sh dynamodb 2>&1 | tee ci-logs/build.log
           jar=$(find . -name 'dynamodb.metabase-driver.jar' -not -path './node_modules/*' | head -1)
           echo "built: $jar"; ls -la "$jar"
+          unzip -l "$jar" | grep -E "metabase-plugin.yaml|dynamodb" | tee ci-logs/jar-contents.txt
           mkdir -p out && cp "$jar" out/
 
       - uses: actions/upload-artifact@v4
         with:
           name: dynamodb.metabase-driver.jar
           path: out/dynamodb.metabase-driver.jar
+
+      - name: Publish logs to the ci-logs-build branch
+        if: always()
+        working-directory: ci-logs
+        run: |
+          git init -q -b logs
+          git add -A
+          git -c user.name=ci -c user.email=ci@localhost commit -q -m "build logs, run ${{ github.run_id }}" --allow-empty
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/ci-logs-build
 
   e2e:
     needs: build
@@ -83,28 +98,29 @@ jobs:
 
       - name: Start Metabase
         run: |
+          mkdir -p ci-logs mbdata
           MB_PLUGINS_DIR=$PWD/plugins MB_DB_FILE=$PWD/mbdata/metabase.db \
-            nohup java -jar metabase.jar > metabase.log 2>&1 &
+            nohup java -jar metabase.jar > ci-logs/metabase.log 2>&1 &
 
       - name: Run end-to-end checks
         run: |
+          set -o pipefail
           pip install --quiet boto3
-          python3 test/e2e/e2e.py
+          python3 test/e2e/e2e.py 2>&1 | tee ci-logs/e2e.log
 
-      - name: Metabase log (driver lines)
+      - name: Publish logs to the ci-logs-e2e branch
         if: always()
-        run: grep -i -E "dynamodb|exception|error" metabase.log | tail -200 || true
-
-      - name: Full Metabase log
-        if: failure()
-        run: tail -400 metabase.log
+        working-directory: ci-logs
+        run: |
+          git init -q -b logs
+          git add -A
+          git -c user.name=ci -c user.email=ci@localhost commit -q -m "e2e logs, run ${{ github.run_id }}" --allow-empty
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/ci-logs-e2e
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: e2e
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - uses: actions/download-artifact@v4
         with:
