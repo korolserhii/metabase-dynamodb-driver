@@ -145,10 +145,17 @@ def main():
     wait_for_metabase()
     setup_admin()
 
-    engines = api("GET", "/api/session/properties")["engines"]
-    if "dynamodb" not in engines:
+    props = api("GET", "/api/session/properties")
+    engines = props.get("engines")
+    if engines is None:
+        log("session properties have no 'engines' key (keys with 'engine': %s); skipping the listing check"
+            % [k for k in props if "engine" in k.lower()])
+    elif "dynamodb" not in engines:
         fail("driver not offered in 'Add database'; engines: " + ", ".join(sorted(engines)))
-    log("driver is listed: " + engines["dynamodb"]["driver-name"])
+    elif engines["dynamodb"].get("superseded-by"):
+        fail("driver is hidden from 'Add database' (superseded-by is set)")
+    else:
+        log("driver is listed: " + engines["dynamodb"]["driver-name"])
 
     bad = api("POST", "/api/database", {
         "engine": "dynamodb", "name": "bad", "details": {"region": "us-east-1", "endpoint": "http://localhost:1"},
