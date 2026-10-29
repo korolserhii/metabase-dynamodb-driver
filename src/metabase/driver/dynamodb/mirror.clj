@@ -319,7 +319,12 @@
   (let [m        (mirror details)
         names    (table-names details)
         existing (set names)]
-    (ensure-tables! details names)
+    ;; one unreadable table (e.g. IAM allows ListTables but not Scan on it) must not break sync of the others
+    (doseq [table names]
+      (try
+        (ensure-tables! details [table])
+        (catch Throwable e
+          (log/warnf "Skipping DynamoDB table %s: %s" table (ex-message e)))))
     (locking (:load-lock m)
       (doseq [gone (remove existing (keys @(:loaded m)))]
         (execute! (:admin-conn m) (str "DROP TABLE IF EXISTS " (quote-id gone)))

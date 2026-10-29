@@ -12,7 +12,7 @@ Answers the long-standing request [metabase/metabase#3368](https://github.com/me
 3. Restart Metabase.
 4. **Admin → Databases → Add database → Amazon DynamoDB.**
 
-Tested with Metabase **v0.65**. Metabase Cloud does not allow community drivers, so this works with self-hosted
+Tested with Metabase **v0.65.2.2** (automated end-to-end tests against DynamoDB Local). Metabase Cloud does not allow community drivers, so this works with self-hosted
 Metabase only.
 
 ## Connecting
@@ -25,15 +25,31 @@ Metabase only.
 | Maximum rows read per table (advanced) | Default 100,000. |
 | Re-read tables after, minutes (advanced) | Default 10. |
 
-The IAM identity needs only read permissions:
+The IAM identity needs only read permissions. `ListTables` cannot be limited to specific tables; `DescribeTable` and
+`Scan` can, so list only the tables Metabase should see:
 
 ```json
 {
-  "Effect": "Allow",
-  "Action": ["dynamodb:ListTables", "dynamodb:DescribeTable", "dynamodb:Scan"],
-  "Resource": "*"
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "dynamodb:ListTables",
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["dynamodb:DescribeTable", "dynamodb:Scan"],
+      "Resource": [
+        "arn:aws:dynamodb:eu-central-1:123456789012:table/Orders",
+        "arn:aws:dynamodb:eu-central-1:123456789012:table/customer-events"
+      ]
+    }
+  ]
 }
 ```
+
+Tables listed but not readable will fail to sync; everything else keeps working.
 
 ## How it works
 
@@ -54,8 +70,8 @@ What this means for you:
 
 | DynamoDB | Metabase |
 |---|---|
-| Number (all whole numbers) | Big integer |
-| Number (with decimals) | Float (exact decimal) |
+| Number (all whole numbers of up to 18 digits) | Big integer |
+| Number (with decimals, or longer whole numbers) | Float (exact decimal) |
 | String | Text |
 | String with ISO dates (`2026-03-01`) | Date |
 | String with ISO timestamps (`2026-03-01T10:00:00Z`) | Timestamp with time zone |
