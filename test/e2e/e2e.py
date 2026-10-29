@@ -46,12 +46,12 @@ def seed():
                               {"AttributeName": "seq", "AttributeType": "N"}],
         BillingMode="PAY_PER_REQUEST")
 
-    # 30 orders over three months; total = sum(1..30) * 10 = 4650.00
+    # 30 orders over three months; amount = i*10 + 0.5 (DynamoDB stores 10.00 as 10, so use real fractions)
     for i in range(1, 31):
         month = 1 + (i - 1) // 10
         item = {
             "order_id": {"S": f"o-{i:03d}"},
-            "amount": {"N": f"{i * 10}.00"},
+            "amount": {"N": f"{i * 10}.5"},
             "quantity": {"N": str(i)},
             "paid": {"BOOL": i % 2 == 0},
             "created_at": {"S": f"2026-{month:02d}-{(i % 10) + 1:02d}T10:00:00Z"},
@@ -217,9 +217,10 @@ def main():
                   "query": {"source-table": orders["id"],
                             "aggregation": [["sum", ["field", fields["amount"]["id"], None]]],
                             "filter": ["=", ["field", fields["paid"]["id"], None], True]}}))
-    if abs(float(r[0][0]) - 2400.0) > 0.001:
-        fail(f"sum(amount) where paid: expected 2400, got {r}")
-    log("sum(amount) where paid = 2400")
+    # paid = even i: sum(i*10) = 2400, plus 15 * 0.5
+    if abs(float(r[0][0]) - 2407.5) > 0.001:
+        fail(f"sum(amount) where paid: expected 2407.5, got {r}")
+    log("sum(amount) where paid = 2407.5")
 
     # 3. group by month
     r = rows(run({"database": db_id, "type": "query",
