@@ -129,7 +129,7 @@ def setup_admin():
 
 
 def run(query, expect_ok=True):
-    res = api("POST", "/api/dataset", query)
+    res = api("POST", "/api/dataset", query, expect_ok=expect_ok)
     status = res.get("status")
     if expect_ok and status != "completed":
         fail(f"query failed: {json.dumps(query)}\n{res.get('error')}")
