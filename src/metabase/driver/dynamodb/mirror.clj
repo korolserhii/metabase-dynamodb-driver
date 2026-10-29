@@ -106,7 +106,7 @@
   (let [{k :key, :keys [reader-password]} (mirror details)]
     {:classname   "org.h2.Driver"
      :subprotocol "h2"
-     :subname     (str "mem:mbdynamodb_" k ";DB_CLOSE_DELAY=-1;IFEXISTS=TRUE")
+     :subname     (str "mem:mbdynamodb_" k ";IFEXISTS=TRUE")
      :user        reader-user
      :password    reader-password}))
 
