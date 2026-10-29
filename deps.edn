@@ -1,0 +1,8 @@
+{:paths ["src" "resources"]
+
+ ;; Same AWS SDK version Metabase core ships (for S3), so the shared SDK core classes match.
+ ;; Netty is excluded: we use the Apache HTTP client, which Metabase core already bundles.
+ :deps
+ {software.amazon.awssdk/dynamodb      {:mvn/version "2.40.13"
+                                        :exclusions  [software.amazon.awssdk/netty-nio-client]}
+  software.amazon.awssdk/apache-client {:mvn/version "2.40.13"}}}

@@ -1,0 +1,2 @@
+{:lint-as {metabase.driver.dynamodb.client/with-client clojure.core/with-open}
+ :linters {:redundant-ignore {:level :off}}}

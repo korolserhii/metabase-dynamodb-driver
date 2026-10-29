@@ -1,0 +1,115 @@
+name: Build and test
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  METABASE_VERSION: v0.65.2.2
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Metabase ${{ env.METABASE_VERSION }}
+        uses: actions/checkout@v4
+        with:
+          repository: metabase/metabase
+          ref: ${{ env.METABASE_VERSION }}
+
+      - name: Check out the driver
+        uses: actions/checkout@v4
+        with:
+          path: modules/drivers/dynamodb
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install Clojure CLI
+        run: |
+          curl -sSL -O https://github.com/clojure/brew-install/releases/latest/download/linux-install.sh
+          chmod +x linux-install.sh
+          sudo ./linux-install.sh
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2
+            ~/.gitlibs
+          key: deps-${{ env.METABASE_VERSION }}-${{ hashFiles('modules/drivers/dynamodb/deps.edn') }}
+
+      - name: Build the driver
+        run: |
+          echo '{:deps {metabase/dynamodb {:local/root "dynamodb"}}}' > modules/drivers/deps.edn
+          ./bin/build-driver.sh dynamodb
+          jar=$(find . -name 'dynamodb.metabase-driver.jar' -not -path './node_modules/*' | head -1)
+          echo "built: $jar"; ls -la "$jar"
+          mkdir -p out && cp "$jar" out/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dynamodb.metabase-driver.jar
+          path: out/dynamodb.metabase-driver.jar
+
+  e2e:
+    needs: build
+    runs-on: ubuntu-latest
+    services:
+      dynamodb:
+        image: amazon/dynamodb-local:latest
+        ports:
+          - 8000:8000
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: dynamodb.metabase-driver.jar
+          path: plugins
+
+      - name: Download Metabase ${{ env.METABASE_VERSION }}
+        run: curl -sSL -o metabase.jar "https://downloads.metabase.com/${METABASE_VERSION}/metabase.jar"
+
+      - name: Start Metabase
+        run: |
+          MB_PLUGINS_DIR=$PWD/plugins MB_DB_FILE=$PWD/mbdata/metabase.db \
+            nohup java -jar metabase.jar > metabase.log 2>&1 &
+
+      - name: Run end-to-end checks
+        run: |
+          pip install --quiet boto3
+          python3 test/e2e/e2e.py
+
+      - name: Metabase log (driver lines)
+        if: always()
+        run: grep -i -E "dynamodb|exception|error" metabase.log | tail -200 || true
+
+      - name: Full Metabase log
+        if: failure()
+        run: tail -400 metabase.log
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: e2e
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dynamodb.metabase-driver.jar
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dynamodb.metabase-driver.jar
+          generate_release_notes: true

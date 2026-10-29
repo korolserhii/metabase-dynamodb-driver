@@ -1,0 +1,55 @@
+info:
+  name: Metabase DynamoDB Driver
+  version: 0.1.0
+  description: Allows Metabase to query Amazon DynamoDB tables.
+contact-info:
+  name: Korol Serhii
+  address: https://github.com/korolserhii/metabase-dynamodb-driver
+driver:
+  name: dynamodb
+  display-name: Amazon DynamoDB
+  lazy-load: true
+  parent: h2
+  connection-properties:
+    - name: region
+      display-name: AWS region
+      placeholder: us-east-1
+      required: true
+    - name: access-key-id
+      display-name: Access key ID
+      helper-text: Leave empty to use the default AWS credentials chain (environment variables, IAM role of the Metabase host, etc.).
+      required: false
+    - name: secret-access-key
+      display-name: Secret access key
+      type: password
+      required: false
+    - advanced-options-start
+    - name: endpoint
+      display-name: Custom endpoint URL
+      helper-text: Only needed for DynamoDB Local or a VPC endpoint, e.g. http://localhost:8000
+      placeholder: http://localhost:8000
+      required: false
+      visible-if:
+        advanced-options: true
+    - name: max-rows-per-table
+      display-name: Maximum rows read per table
+      helper-text: Each table is scanned and cached up to this many items.
+      type: integer
+      default: 100000
+      placeholder: 100000
+      required: false
+      visible-if:
+        advanced-options: true
+    - name: refresh-minutes
+      display-name: Re-read tables after (minutes)
+      helper-text: Cached table data older than this is re-read from DynamoDB before the next query.
+      type: integer
+      default: 10
+      placeholder: 10
+      required: false
+      visible-if:
+        advanced-options: true
+    - default-advanced-options
+init:
+  - step: load-namespace
+    namespace: metabase.driver.dynamodb
