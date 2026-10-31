@@ -5,6 +5,8 @@ sums and counts, dashboards, and plain SQL — no Athena, no ETL pipeline, no ex
 
 Answers the long-standing request [metabase/metabase#3368](https://github.com/metabase/metabase/issues/3368).
 
+![Adding a DynamoDB database in Metabase, browsing a table, running SQL and a dashboard](docs/demo.gif)
+
 ## Install
 
 1. Download `dynamodb.metabase-driver.jar` from the [latest release](https://github.com/korolserhii/metabase-dynamodb-driver/releases/latest).
