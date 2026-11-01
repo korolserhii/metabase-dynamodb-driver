@@ -46,6 +46,11 @@
   [details]
   (max 1 (->long (:max-rows-per-table details) 100000)))
 
+(defn max-bytes
+  "Maximum amount of item data read per table, in bytes (setting is in MB)."
+  [details]
+  (* 1024 1024 (max 1 (->long (:max-mb-per-table details) 100))))
+
 (defn- refresh-ms [details]
   (* 60 1000 (max 0 (->long (:refresh-minutes details) 10))))
 
@@ -266,14 +271,18 @@
         limit   (max-rows details)
         staging (str staging-prefix (str/replace (str (UUID/randomUUID)) "-" ""))
         started (System/currentTimeMillis)
-        {:keys [items truncated? key-names]}
+        mb      (quot (max-bytes details) (* 1024 1024))
+        {:keys [items truncated? key-names cut-by bytes]}
         (ddb/with-client [client details]
-          (assoc (ddb/scan client table-name limit)
+          (assoc (ddb/scan client table-name limit (max-bytes details))
                  :key-names (ddb/key-attribute-names client table-name)))
         columns (infer-columns key-names items)]
     (when truncated?
-      (log/warnf "DynamoDB table %s has more than %d items; Metabase sees the first %d (raise \"Maximum rows read per table\" to see more)"
-                 table-name limit limit))
+      (if (= cut-by :bytes)
+        (log/warnf "DynamoDB table %s is larger than %d MB; Metabase sees the first %d items (%d MB). Raise \"Maximum MB read per table\" only if the Metabase JVM has enough memory: the in-memory copy takes several times the data size."
+                   table-name mb (count items) (quot bytes (* 1024 1024)))
+        (log/warnf "DynamoDB table %s has more than %d items; Metabase sees the first %d (raise \"Maximum rows read per table\" to see more)"
+                   table-name limit limit)))
     (try
       (execute! conn (format "CREATE TABLE %s (%s)"
                              (quote-id staging)
@@ -285,8 +294,8 @@
         (execute! conn (str "DROP TABLE IF EXISTS " (quote-id staging)))
         (throw e)))
     (swap! (:loaded m) assoc table-name (System/currentTimeMillis))
-    (log/infof "Loaded DynamoDB table %s: %d items, %d columns in %d ms"
-               table-name (count items) (count columns) (- (System/currentTimeMillis) started))))
+    (log/infof "Loaded DynamoDB table %s: %d items (about %d KB), %d columns in %d ms"
+               table-name (count items) (quot bytes 1024) (count columns) (- (System/currentTimeMillis) started))))
 
 (defn- stale? [details loaded-at]
   (or (nil? loaded-at)

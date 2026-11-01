@@ -92,11 +92,34 @@
                        (.keySchema desc))]
     (mapv (fn [^KeySchemaElement e] (.attributeName e)) elems)))
 
+(declare attribute-type)
+
+(defn- value-size
+  "Approximate size of `av` in bytes, close to how DynamoDB counts item size (strings by character, not UTF-8)."
+  ^long [^AttributeValue av]
+  (case (attribute-type av)
+    "S"    (count (.s av))
+    "N"    (count (.n av))
+    "B"    (alength (.asByteArray (.b av)))
+    "SS"   (reduce + 0 (map count (.ss av)))
+    "NS"   (reduce + 0 (map count (.ns av)))
+    "BS"   (reduce + 0 (map (fn [^software.amazon.awssdk.core.SdkBytes b] (alength (.asByteArray b))) (.bs av)))
+    "M"    (reduce + 3 (map (fn [[^String k v]] (+ (count k) (value-size v))) (.m av)))
+    "L"    (reduce + 3 (map value-size (.l av)))
+    1))
+
+(defn item-size
+  "Approximate size of a DynamoDB item in bytes: attribute names plus values."
+  ^long [^Map item]
+  (reduce + 0 (map (fn [[^String k v]] (+ (count k) (value-size v))) item)))
+
 (defn scan
-  "Read up to `max-items` items of `table-name`. Returns {:items [Map ...] :truncated? bool}. Each item is a
-  java.util.Map of attribute name -> AttributeValue."
-  [^DynamoDbClient client ^String table-name max-items]
-  (loop [start-key nil, items (transient []), n 0]
+  "Read `table-name` until `max-items` items or about `max-bytes` of item data have been read, whichever comes first.
+  Returns {:items [Map ...] :truncated? bool :bytes n :cut-by #{:rows :bytes}}. Each item is a java.util.Map of
+  attribute name -> AttributeValue. The byte limit is checked per page (up to 1000 items), so it can be exceeded by
+  at most one page."
+  [^DynamoDbClient client ^String table-name max-items max-bytes]
+  (loop [start-key nil, items (transient []), n 0, bytes 0]
     (let [remaining (- max-items n)
           ^ScanRequest req (cond-> (ScanRequest/builder)
                              true      (.tableName table-name)
@@ -107,11 +130,15 @@
           page  (.items resp)
           items (reduce conj! items page)
           n     (+ n (count page))
+          bytes (+ bytes (long (reduce + 0 (map item-size page))))
           lek   (.lastEvaluatedKey resp)
-          more? (and (.hasLastEvaluatedKey resp) (seq lek))]
+          more? (boolean (and (.hasLastEvaluatedKey resp) (seq lek)))]
       (cond
-        (and more? (< n max-items)) (recur lek items n)
-        :else {:items (persistent! items), :truncated? (boolean more?)}))))
+        (and more? (< n max-items) (< bytes max-bytes)) (recur lek items n bytes)
+        :else {:items      (persistent! items)
+               :truncated? more?
+               :bytes      bytes
+               :cut-by     (cond (not more?) nil (>= bytes max-bytes) :bytes :else :rows)}))))
 
 (defn attribute-type
   "The DynamoDB type of `av` as a string: S N B SS NS BS M L BOOL NUL."
