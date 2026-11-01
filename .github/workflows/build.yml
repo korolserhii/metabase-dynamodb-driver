@@ -5,16 +5,41 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
-
-env:
-  METABASE_VERSION: v0.65.2.2
+  # Called by auto-update.yml to try a newer Metabase before anything is released.
+  workflow_call:
+    inputs:
+      metabase_version:
+        type: string
+        required: false
+        default: ""
 
 permissions:
   contents: write
 
 jobs:
-  build:
+  # The Metabase version lives in metabase-version.txt (not in this file), so the auto-update
+  # workflow can bump it: GitHub does not let workflows edit workflow files.
+  version:
     runs-on: ubuntu-latest
+    outputs:
+      metabase: ${{ steps.v.outputs.metabase }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: metabase-version.txt
+          sparse-checkout-cone-mode: false
+      - id: v
+        run: |
+          v="${{ inputs.metabase_version }}"
+          [ -n "$v" ] || v=$(tr -d ' \r\n' < metabase-version.txt)
+          echo "Metabase $v"
+          echo "metabase=$v" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: version
+    runs-on: ubuntu-latest
+    env:
+      METABASE_VERSION: ${{ needs.version.outputs.metabase }}
     steps:
       - name: Check out Metabase ${{ env.METABASE_VERSION }}
         uses: actions/checkout@v4
@@ -72,8 +97,10 @@ jobs:
           git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/ci-logs-build
 
   e2e:
-    needs: build
+    needs: [version, build]
     runs-on: ubuntu-latest
+    env:
+      METABASE_VERSION: ${{ needs.version.outputs.metabase }}
     services:
       dynamodb:
         image: amazon/dynamodb-local:latest
@@ -118,7 +145,11 @@ jobs:
 
   release:
     # Publishes a GitHub release when the version in the plugin manifest has no release yet.
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    # Not when auto-update.yml is only trying a new Metabase (it passes metabase_version);
+    # it dispatches this workflow again after the version bump, and that run releases.
+    if: >-
+      github.ref == 'refs/heads/main' && inputs.metabase_version == '' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     needs: e2e
     runs-on: ubuntu-latest
     steps:

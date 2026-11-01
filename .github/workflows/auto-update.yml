@@ -1,0 +1,122 @@
+name: Follow new Metabase releases
+
+# Every day: if Metabase has published a newer stable version, build and test the driver against it.
+#   - tests pass  -> bump metabase-version.txt and the driver's patch version, then release automatically;
+#   - tests fail  -> open an issue (GitHub emails the owner), nothing is released.
+# A version that already has an open "fails with Metabase vX" issue is not re-tested every day.
+
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  actions: write
+
+concurrency:
+  group: auto-update
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      current: ${{ steps.v.outputs.current }}
+      latest: ${{ steps.v.outputs.latest }}
+      newer: ${{ steps.v.outputs.newer }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          current=$(tr -d ' \r\n' < metabase-version.txt)
+          # Stable open-source tags only (v0.X.Y or v0.X.Y.Z), newest first; skip ones without a downloadable jar yet.
+          latest=""
+          for t in $(git ls-remote --tags https://github.com/metabase/metabase | awk '{print $2}' \
+                       | sed 's#refs/tags/##; s#\^{}##' | grep -E '^v0\.[0-9]+\.[0-9]+(\.[0-9]+)?$' \
+                       | sort -uV -r | head -5); do
+            if curl -fsIL -o /dev/null "https://downloads.metabase.com/$t/metabase.jar"; then latest=$t; break; fi
+          done
+          newer=false
+          if [ -n "$latest" ] && [ "$latest" != "$current" ] \
+             && [ "$(printf '%s\n%s\n' "$current" "$latest" | sort -V | tail -1)" = "$latest" ]; then
+            open=$(gh issue list --state open --search "\"Metabase $latest\" in:title" --json number --jq length)
+            if [ "$open" = "0" ]; then newer=true; else echo "An open issue already tracks Metabase $latest."; fi
+          fi
+          echo "current=$current latest=$latest newer=$newer"
+          { echo "current=$current"; echo "latest=$latest"; echo "newer=$newer"; } >> "$GITHUB_OUTPUT"
+
+  test:
+    needs: check
+    if: needs.check.outputs.newer == 'true'
+    uses: ./.github/workflows/build.yml
+    with:
+      metabase_version: ${{ needs.check.outputs.latest }}
+
+  publish:
+    needs: [check, test]
+    if: needs.test.result == 'success'
+    runs-on: ubuntu-latest
+    env:
+      LATEST: ${{ needs.check.outputs.latest }}
+      CURRENT: ${{ needs.check.outputs.current }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Bump versions
+        run: |
+          printf '%s\n' "$LATEST" > metabase-version.txt
+          python3 - <<'PY'
+          import os, re
+          latest, current = os.environ["LATEST"], os.environ["CURRENT"]
+          p = "resources/metabase/dynamodb/metabase-plugin.yaml"
+          s = open(p).read()
+          m = re.search(r"^(\s+version:\s*)(\d+)\.(\d+)\.(\d+)\s*$", s, re.M)
+          new = f"{m.group(2)}.{m.group(3)}.{int(m.group(4)) + 1}"
+          s = s[:m.start()] + f"{m.group(1)}{new}" + s[m.end():]
+          open(p, "w").write(s)
+          r = open("README.md").read()
+          r = re.sub(r"Tested with Metabase \*\*v[0-9.]+\*\*", f"Tested with Metabase **{latest}**", r, count=1)
+          open("README.md", "w").write(r)
+          open("RELEASE_NOTES.md", "w").write(
+              f"Compatibility update: the driver now builds and passes its automated end-to-end tests with "
+              f"**Metabase {latest}** (previously {current}). No feature changes.\n\n"
+              "**Install:** download `dynamodb.metabase-driver.jar` below, put it in Metabase's `plugins/` directory "
+              "(replacing the old jar), restart Metabase. Setup details are in the "
+              "[README](https://github.com/korolserhii/metabase-dynamodb-driver#readme).\n")
+          print("driver version", new)
+          PY
+      - name: Commit and release
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add metabase-version.txt resources/metabase/dynamodb/metabase-plugin.yaml README.md RELEASE_NOTES.md
+          git commit -m "Support Metabase $LATEST (automatic compatibility update)"
+          git push origin HEAD:main
+          # A push made with the workflow token does not start other workflows, so start the release run explicitly.
+          gh workflow run build.yml --ref main
+
+  report:
+    needs: [check, test]
+    if: always() && needs.check.outputs.newer == 'true' && needs.test.result == 'failure'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      LATEST: ${{ needs.check.outputs.latest }}
+      CURRENT: ${{ needs.check.outputs.current }}
+    steps:
+      - run: |
+          gh issue create --repo "${{ github.repository }}" \
+            --title "Driver fails with Metabase $LATEST" \
+            --body "The daily check built and tested the driver against **Metabase $LATEST** and it failed. Nothing was released; the current release still targets $CURRENT.
+
+          Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          Build and end-to-end logs: branches \`ci-logs-build\` and \`ci-logs-e2e\`.
+          What changed for drivers: https://www.metabase.com/docs/latest/developers-guide/driver-changelog
+
+          Close this issue after the fix is released; the daily check skips $LATEST while it is open."
