@@ -14,7 +14,7 @@ Answers the long-standing request [metabase/metabase#3368](https://github.com/me
 3. Restart Metabase.
 4. **Admin → Databases → Add database → Amazon DynamoDB.**
 
-Tested with Metabase **v0.65.2.2** (automated end-to-end tests against DynamoDB Local). Metabase Cloud does not allow community drivers, so this works with self-hosted
+Tested with Metabase **v0.65.2.5** (automated end-to-end tests against DynamoDB Local). Metabase Cloud does not allow community drivers, so this works with self-hosted
 Metabase only.
 
 ## Connecting
