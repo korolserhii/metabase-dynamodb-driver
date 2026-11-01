@@ -1,0 +1,90 @@
+Clearing outdated .cpcache directories if needed...
+No .cpcache directories found; nothing to do
+Warning: environ value /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.13-9/x64 for key :java-home has been overwritten with /usr/lib/jvm/temurin-21-jdk-amd64
+[32mBuild driver :dynamodb (edition = :oss, options = nil)[0m
+  [32mClean[0m
+    [32mDelete /home/runner/work/metabase-dynamodb-driver/metabase-dynamodb-driver/modules/drivers/dynamodb/target/jar if exists[0m
+      Don't need to delete /home/runner/work/metabase-dynamodb-driver/metabase-dynamodb-driver/modules/drivers/dynamodb/target/jar, file does not exist.
+    [32mDelete /home/runner/work/metabase-dynamodb-driver/metabase-dynamodb-driver/resources/modules/dynamodb.metabase-driver.jar if exists[0m
+      Don't need to delete /home/runner/work/metabase-dynamodb-driver/metabase-dynamodb-driver/resources/modules/dynamodb.metabase-driver.jar, file does not exist.
+  [32mCopy :dynamodb source files[0m
+    [35mCopying files in ["/home/runner/work/metabase-dynamodb-driver/metabase-dynamodb-driver/modules/drivers/dynamodb/src" "/home/runner/work/metabase-dynamodb-driver/metabase-dynamodb-driver/modules/drivers/dynamodb/resources"][0m
+    [35mCopying files from /home/runner/work/metabase-dynamodb-driver/metabase-dynamodb-driver/modules/drivers/dynamodb/src to /home/runner/work/metabase-dynamodb-driver/metabase-dynamodb-driver/modules/drivers/dynamodb/target/jar[0m
+    [35mCopying files from /home/runner/work/metabase-dynamodb-driver/metabase-dynamodb-driver/modules/drivers/dynamodb/resources to /home/runner/work/metabase-dynamodb-driver/metabase-dynamodb-driver/modules/drivers/dynamodb/target/jar[0m
+    [35mCopied files in 2 directories in 12 ms.[0m
+  [32mCompile clojure source files[0m
+    [35mCompiling Clojure source files in ["/home/runner/work/metabase-dynamodb-driver/metabase-dynamodb-driver/modules/drivers/dynamodb/src" "/home/runner/work/metabase-dynamodb-driver/metabase-dynamodb-driver/modules/drivers/dynamodb/resources"] to /home/runner/work/metabase-dynamodb-driver/metabase-dynamodb-driver/modules/drivers/dynamodb/target/jar[0m
+    [32mCreate directory /home/runner/work/metabase-dynamodb-driver/metabase-dynamodb-driver/modules/drivers/dynamodb/target/jar if it does not exist[0m
+      [35m/home/runner/work/metabase-dynamodb-driver/metabase-dynamodb-driver/modules/drivers/dynamodb/target/jar already exists.[0m
+    [35mCompiling namespaces [metabase.driver.dynamodb.client metabase.driver.dynamodb.mirror metabase.driver.dynamodb][0m
+Reflection warning, metabase/driver/dynamodb/client.clj:51:21 - call to method credentialsProvider on software.amazon.awssdk.awscore.client.builder.AwsClientBuilder can't be resolved (argument types: unknown).
+Reflection warning, metabase/driver/dynamodb/client.clj:52:21 - call to method httpClientBuilder can't be resolved (target class is unknown).
+Reflection warning, metabase/driver/dynamodb/client.clj:54:7 - call to method endpointOverride can't be resolved (target class is unknown).
+Reflection warning, metabase/driver/dynamodb/client.clj:55:5 - reference to field build can't be resolved.
+Reflection warning, metabase/driver/dynamodb/client.clj:51:21 - call to method credentialsProvider on software.amazon.awssdk.awscore.client.builder.AwsClientBuilder can't be resolved (argument types: unknown).
+Reflection warning, metabase/driver/dynamodb/client.clj:52:21 - call to method httpClientBuilder can't be resolved (target class is unknown).
+Reflection warning, metabase/driver/dynamodb/client.clj:54:7 - call to method endpointOverride can't be resolved (target class is unknown).
+Reflection warning, metabase/driver/dynamodb/client.clj:55:5 - reference to field build can't be resolved.
+2026-11-01 14:54:49,286 INFO metabase.util :: Maximum memory available to JVM: 3.9 GB 
+2026-11-01 14:54:56,727 WARN app-db.env :: [31mWARNING: Using Metabase with an H2 application database is not recommended for production deployments. For production deployments, we highly recommend using Postgres, MySQL, or MariaDB instead. If you decide to continue to use H2, please be sure to back up the database file regularly. For more information, see https://metabase.com/docs/latest/operations-guide/migrating-from-h2.html[0m 
+2026-11-01 14:54:57,724 INFO util.encryption :: Saved credentials encryption is DISABLED for this Metabase instance. 🔓 
+ For more information, see https://metabase.com/docs/latest/operations-guide/encrypting-database-details-at-rest.html 
+Reflection warning, clojurewerkz/quartzite/triggers.clj:85:6 - call to method forJob on org.quartz.TriggerBuilder can't be resolved (argument types: unknown).
+Reflection warning, clojurewerkz/quartzite/scheduler.clj:254:3 - call to method checkExists on org.quartz.Scheduler can't be resolved (argument types: unknown).
+2026-11-01 14:55:14,032 INFO driver.impl :: [34mRegistered abstract driver :sql[0m  🚚 
+2026-11-01 14:55:14,205 INFO driver.impl :: [34mRegistered abstract driver :sql-jdbc[0m (parents: [:sql]) 🚚 
+2026-11-01 14:55:14,254 INFO driver.impl :: [34mRegistered abstract driver :metabase.driver.sql.query-processor.like-escape-char-built-in/like-escape-char-built-in[0m  🚚 
+2026-11-01 14:55:14,258 INFO driver.impl :: [34mRegistered driver :h2[0m (parents: [:sql-jdbc :metabase.driver.sql.query-processor.like-escape-char-built-in/like-escape-char-built-in]) 🚚 
+2026-11-01 14:55:14,345 INFO metabase.util :: [32mLoad driver :h2 took 815.7 ms[0m 
+2026-11-01 14:55:14,345 INFO driver.impl :: [34mRegistered driver :dynamodb[0m (parents: [:h2]) 🚚 
+2026-11-01 14:55:14,358 INFO driver.dynamodb :: Metabase DynamoDB driver loaded 
+2026-11-01 14:55:14,375 INFO driver.dynamodb :: Metabase DynamoDB driver loaded 
+    [35mCompiled 3 namespace(s) in 29542 ms.[0m
+  [32mWrite :dynamodb :oss uberjar -> /home/runner/work/metabase-dynamodb-driver/metabase-dynamodb-driver/resources/modules/dynamodb.metabase-driver.jar[0m
+    [32mDetermine which dependencies to include[0m
+      [35mSKIP    [33mcommons-codec/commons-codec[0m (provided by metabase-core)[0m
+      [35mSKIP    [33mcommons-logging/commons-logging[0m (provided by metabase-core)[0m
+      [35mSKIP    [33morg.apache.httpcomponents/httpclient[0m (provided by metabase-core)[0m
+      [35mSKIP    [33morg.apache.httpcomponents/httpcore[0m (provided by metabase-core)[0m
+      [35mSKIP    [33morg.clojure/clojure[0m (provided by metabase-core)[0m
+      [35mSKIP    [33morg.clojure/core.specs.alpha[0m (provided by metabase-core)[0m
+      [35mSKIP    [33morg.clojure/spec.alpha[0m (provided by metabase-core)[0m
+      [35mSKIP    [33morg.reactivestreams/reactive-streams[0m (provided by metabase-core)[0m
+      [35mSKIP    [33morg.slf4j/slf4j-api[0m (provided by metabase-core)[0m
+      [35mSKIP    [33msoftware.amazon.awssdk/annotations[0m (provided by metabase-core)[0m
+      [35mSKIP    [33msoftware.amazon.awssdk/apache-client[0m (provided by metabase-core)[0m
+      [35mSKIP    [33msoftware.amazon.awssdk/auth[0m (provided by metabase-core)[0m
+      [35mSKIP    [33msoftware.amazon.awssdk/aws-core[0m (provided by metabase-core)[0m
+      [35mINCLUDE [33msoftware.amazon.awssdk/aws-json-protocol[0m[0m
+      [35mSKIP    [33msoftware.amazon.awssdk/checksums[0m (provided by metabase-core)[0m
+      [35mSKIP    [33msoftware.amazon.awssdk/checksums-spi[0m (provided by metabase-core)[0m
+      [35mINCLUDE [33msoftware.amazon.awssdk/dynamodb[0m[0m
+      [35mSKIP    [33msoftware.amazon.awssdk/endpoints-spi[0m (provided by metabase-core)[0m
+      [35mSKIP    [33msoftware.amazon.awssdk/http-auth[0m (provided by metabase-core)[0m
+      [35mSKIP    [33msoftware.amazon.awssdk/http-auth-aws[0m (provided by metabase-core)[0m
+      [35mSKIP    [33msoftware.amazon.awssdk/http-auth-aws-eventstream[0m (provided by metabase-core)[0m
+      [35mSKIP    [33msoftware.amazon.awssdk/http-auth-spi[0m (provided by metabase-core)[0m
+      [35mSKIP    [33msoftware.amazon.awssdk/http-client-spi[0m (provided by metabase-core)[0m
+      [35mSKIP    [33msoftware.amazon.awssdk/identity-spi[0m (provided by metabase-core)[0m
+      [35mSKIP    [33msoftware.amazon.awssdk/json-utils[0m (provided by metabase-core)[0m
+      [35mSKIP    [33msoftware.amazon.awssdk/metrics-spi[0m (provided by metabase-core)[0m
+      [35mSKIP    [33msoftware.amazon.awssdk/profiles[0m (provided by metabase-core)[0m
+      [35mSKIP    [33msoftware.amazon.awssdk/protocol-core[0m (provided by metabase-core)[0m
+      [35mSKIP    [33msoftware.amazon.awssdk/regions[0m (provided by metabase-core)[0m
+      [35mSKIP    [33msoftware.amazon.awssdk/retries[0m (provided by metabase-core)[0m
+      [35mSKIP    [33msoftware.amazon.awssdk/retries-spi[0m (provided by metabase-core)[0m
+      [35mSKIP    [33msoftware.amazon.awssdk/sdk-core[0m (provided by metabase-core)[0m
+      [35mSKIP    [33msoftware.amazon.awssdk/third-party-jackson-core[0m (provided by metabase-core)[0m
+      [35mSKIP    [33msoftware.amazon.awssdk/utils[0m (provided by metabase-core)[0m
+      [35mSKIP    [33msoftware.amazon.awssdk/utils-lite[0m (provided by metabase-core)[0m
+      [35mSKIP    [33msoftware.amazon.eventstream/eventstream[0m (provided by metabase-core)[0m
+    [35mCreated uberjar in 1919 ms.[0m
+  [35mBuilt :dynamodb driver in 31477 ms.[0m
+  [32m[32mVerify [0m[33m:dynamodb[0m[32m driver[0m[0m
+    [32mCheck /home/runner/work/metabase-dynamodb-driver/metabase-dynamodb-driver/resources/modules/dynamodb.metabase-driver.jar contains init class file metabase/driver/dynamodb__init.class[0m
+      [35mDriver init class file found.[0m
+    [32mCheck /home/runner/work/metabase-dynamodb-driver/metabase-dynamodb-driver/resources/modules/dynamodb.metabase-driver.jar contains metabase-plugin.yaml[0m
+      [35mPlugin manifest found at metabase/dynamodb/metabase-plugin.yaml; validating it[0m
+      [35mPlugin manifest passed spec validation[0m
+    [32mCheck /home/runner/work/metabase-dynamodb-driver/metabase-dynamodb-driver/resources/modules/dynamodb.metabase-driver.jar does not contain Clojure core classes[0m
+    [35m:dynamodb driver verification successful.[0m
