@@ -25,6 +25,7 @@ Metabase only.
 | Access key ID / Secret access key | An IAM user's key. Leave both empty to use the Metabase host's IAM role or environment credentials. |
 | Custom endpoint URL (advanced) | Only for DynamoDB Local or a VPC endpoint. |
 | Maximum rows read per table (advanced) | Default 100,000. |
+| Maximum MB read per table (advanced) | Default 100. Whichever limit is reached first stops the read. |
 | Re-read tables after, minutes (advanced) | Default 10. |
 
 The IAM identity needs only read permissions. `ListTables` cannot be limited to specific tables; `DescribeTable` and
@@ -65,8 +66,13 @@ What this means for you:
 - **SQL works** too. Quote table and attribute names exactly as in DynamoDB: `SELECT "status", COUNT(*) FROM "Orders" GROUP BY "status"`.
 - **Read-only.** Nothing is ever written to DynamoDB.
 - **Scans cost read capacity.** A table is scanned once per refresh interval, not once per query.
-- **Large tables**: only the first *N* items are read (the "Maximum rows read per table" setting); the Metabase log says
-  when a table was cut off. The copy is held in Metabase's memory, so size the JVM heap accordingly.
+- **Filters do not reduce reads.** Each refresh reads the whole table (up to the limits below); filters and date ranges
+  are applied afterwards to the copy. A report on "last 7 days" still scans the table once per refresh interval.
+- **Large tables**: reading stops at "Maximum rows read per table" (100,000) or "Maximum MB read per table" (100 MB),
+  whichever comes first; the Metabase log says when a table was cut off and why.
+- **Memory**: the copy lives in Metabase's own memory (JVM heap) and takes several times the raw data size, and every
+  table counts. A rough rule: keep the sum of table limits below a third of the heap. If Metabase becomes slow or runs
+  out of memory, lower the limits.
 
 ### Types
 

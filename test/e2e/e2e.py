@@ -75,6 +75,14 @@ def seed():
         if len(with_batch) == 25:
             ddb.batch_write_item(RequestItems={"customer-events": with_batch})
             with_batch = []
+    # 50 documents of ~100 KB each (~5 MB): for the size limit check
+    ddb.create_table(
+        TableName="big-docs",
+        KeySchema=[{"AttributeName": "doc_id", "KeyType": "HASH"}],
+        AttributeDefinitions=[{"AttributeName": "doc_id", "AttributeType": "S"}],
+        BillingMode="PAY_PER_REQUEST")
+    for i in range(50):
+        ddb.put_item(TableName="big-docs", Item={"doc_id": {"S": f"d{i:02d}"}, "body": {"S": "x" * 100_000}})
     log("seeded DynamoDB Local")
 
 
@@ -138,6 +146,17 @@ def run(query, expect_ok=True):
 
 def rows(res):
     return res["data"]["rows"]
+
+
+def sync_table(db_id, name):
+    """Wait until Metabase has synced table `name` of database `db_id` and return its metadata."""
+    for _ in range(90):
+        meta = api("GET", f"/api/database/{db_id}/metadata")
+        for t in meta.get("tables", []):
+            if t["name"] == name and t["fields"]:
+                return t
+        time.sleep(2)
+    fail(f"table {name} not synced in database {db_id}")
 
 
 def main():
@@ -273,6 +292,25 @@ def main():
     if r[0][0] != 31:
         fail(f"new item not visible after refresh: {r}")
     log("refresh picks up new items")
+
+    # 9. the MB limit stops reading a table of large items; a different endpoint spelling gives a separate copy
+    small = api("POST", "/api/database", {
+        "engine": "dynamodb",
+        "name": "DynamoDB e2e 1 MB",
+        "details": {"region": "us-east-1", "endpoint": "http://127.0.0.1:8000",
+                    "access-key-id": "dummy", "secret-access-key": "dummy", "max-mb-per-table": 1},
+    })
+    big_full = sync_table(db_id, "big-docs")
+    r = rows(run({"database": db_id, "type": "query",
+                  "query": {"source-table": big_full["id"], "aggregation": [["count"]]}}))
+    if r[0][0] != 50:
+        fail(f"count(big-docs) with default limits: expected 50, got {r}")
+    big_small = sync_table(small["id"], "big-docs")
+    r = rows(run({"database": small["id"], "type": "query",
+                  "query": {"source-table": big_small["id"], "aggregation": [["count"]]}}))
+    if not 0 < r[0][0] < 50:
+        fail(f"count(big-docs) with a 1 MB limit: expected 1..49, got {r}")
+    log(f"MB limit works: 50 items with default limits, {r[0][0]} with 1 MB")
 
     log("ALL CHECKS PASSED")
 
