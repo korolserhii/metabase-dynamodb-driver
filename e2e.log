@@ -1,0 +1,17 @@
+seeded DynamoDB Local
+Metabase admin created
+driver is listed in 'Add database' as: Amazon DynamoDB
+unreachable endpoint is rejected
+database created: 2
+synced tables: Orders, big-docs, customer-events
+Orders fields: amount:type/Float, created_at:type/DateTimeWithLocalTZ, customer:type/Text, note:type/Text, order_id:type/Text, paid:type/Boolean, quantity:type/BigInteger, ship_date:type/Date, status:type/Text, tags:type/Text
+count(Orders) = 30
+sum(amount) where paid = 2407.5
+count by month = 10/10/10
+count(customer-events) = 2500 (multi-page scan)
+native SQL works
+map attribute is JSON
+writes, file access and Java aliases are refused
+refresh picks up new items
+MB limit works: 50 items with default limits, 11 with 1 MB
+ALL CHECKS PASSED
