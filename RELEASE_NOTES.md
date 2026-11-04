@@ -1,7 +1,7 @@
-**New: "Maximum MB read per table"** (advanced setting, default 100). A table is read until either the row limit (100,000) or the MB limit is reached, whichever comes first, and the Metabase log says which limit cut it. Before, only rows were limited, so a table of large items could fill Metabase's memory long before 100,000 rows.
+**Compatibility update for Metabase v0.65.3.** No changes to the driver code or its features.
 
-The README now explains that filters do not reduce DynamoDB reads (each refresh scans the table) and how the in-memory copy relates to the JVM heap.
+The automatic check against v0.65.3 failed while downloading build dependencies (a one-off error in the Clojure build tool, `Error building classpath ... HashMap$Node cannot be cast to HashMap$TreeNode`), not because of anything Metabase changed for drivers. Metabase v0.65.3 ships the same AWS SDK (2.40.13) as before. This release is the same driver rebuilt and retested against v0.65.3.
 
 **Install / upgrade:** download `dynamodb.metabase-driver.jar` below, put it in Metabase's `plugins/` directory (replacing the old jar), restart Metabase. Setup details are in the [README](https://github.com/korolserhii/metabase-dynamodb-driver#readme).
 
-**Tested:** Metabase v0.65.2.5 with automated end-to-end tests against DynamoDB Local, including a table of 100 KB items cut by a 1 MB limit.
+**Tested:** Metabase v0.65.3 with automated end-to-end tests against DynamoDB Local.
