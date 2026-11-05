@@ -104,8 +104,8 @@ Pro is **not released yet**: it is in early access, and the first trial users de
 | Security | IAM keys or host role | hide or mask attributes; AssumeRole for other AWS accounts |
 | New Metabase versions | automatic compatibility updates | guaranteed compatibility and email support |
 
-**Planned price:** $299 per year for one production Metabase instance; test and development instances are included
-at no extra cost. **Free 14-day trial:**
+**Planned price:** $299 per year for one production Metabase deployment (any number of replicas or containers);
+test, staging and development instances are included at no extra cost. **Free 30-day trial:**
 [request it here](https://github.com/korolserhii/metabase-dynamodb-driver/issues/new?template=pro-trial.yml) — tell us
 your table sizes and what you need, and you get the build as soon as it is ready.
 The Pro terms will be a separate commercial license; they never change the Apache 2.0 license of this repository.

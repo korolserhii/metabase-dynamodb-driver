@@ -1,5 +1,5 @@
 name: Pro trial request
-description: Request a free 14-day trial of the DynamoDB driver Pro edition
+description: Request a free 30-day trial of the DynamoDB driver Pro edition
 title: "Pro trial request"
 labels: ["pro-trial"]
 body:

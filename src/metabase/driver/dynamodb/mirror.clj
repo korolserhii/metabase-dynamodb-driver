@@ -40,7 +40,7 @@
 (def ^:private pro-note
   (str "DynamoDB driver: table %s was cut off at the read limit (Community Edition). The Pro edition (early access) is built for large "
        "tables: a copy on disk instead of Metabase memory, parallel reads and hourly and daily read budgets. "
-       "Request a free 14-day trial: https://github.com/korolserhii/metabase-dynamodb-driver#pro"))
+       "Request a free 30-day trial: https://github.com/korolserhii/metabase-dynamodb-driver#pro"))
 
 ;;; ------------------------------------------------ settings ------------------------------------------------------
 
