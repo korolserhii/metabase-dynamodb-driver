@@ -89,6 +89,22 @@ What this means for you:
 Items may have different attributes; every attribute that appears in a table becomes a column, empty where an item
 does not have it.
 
+## Pro
+
+The free driver stays free and open source (Apache 2.0). **Pro** is for teams whose tables outgrow it. It is in early
+access: the first trial users decide what ships first.
+
+| | Free | Pro |
+|---|---|---|
+| Table size | up to 100,000 items / 100 MB per table | millions of items: copy on disk instead of Metabase memory, parallel reads |
+| Read cost | whole table once per refresh | read-capacity budget, so reports never slow down production |
+| Security | IAM keys or host role | hide or mask attributes; AssumeRole for other AWS accounts |
+| New Metabase versions | automatic compatibility updates | guaranteed compatibility and email support |
+
+**Price:** $299 per Metabase server per year. **Free 14-day trial:**
+[request it here](https://github.com/korolserhii/metabase-dynamodb-driver/issues/new?template=pro-trial.yml) — tell us
+your table sizes and what you need, and you get the build as soon as it is ready.
+
 ## Building from source
 
 The CI workflow in `.github/workflows/build.yml` is the reference: it checks out Metabase, places this repository at
