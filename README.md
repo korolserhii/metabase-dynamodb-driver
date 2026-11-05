@@ -14,6 +14,18 @@ Answers the long-standing request [metabase/metabase#3368](https://github.com/me
 3. Restart Metabase.
 4. **Admin → Databases → Add database → Amazon DynamoDB.**
 
+**Docker:** put the jar in a folder on the host and mount that folder as `/plugins`:
+
+```sh
+mkdir -p ~/metabase-plugins
+curl -L -o ~/metabase-plugins/dynamodb.metabase-driver.jar \
+  https://github.com/korolserhii/metabase-dynamodb-driver/releases/latest/download/dynamodb.metabase-driver.jar
+docker run -d -p 3000:3000 --name metabase -v ~/metabase-plugins:/plugins metabase/metabase
+```
+
+The official image reads drivers from `/plugins` (`MB_PLUGINS_DIR`). If the folder already has other drivers, keep
+them there: the mount replaces the whole directory.
+
 Tested with Metabase **v0.65.3.1** (automated end-to-end tests against DynamoDB Local). Metabase Cloud does not allow community drivers, so this works with self-hosted
 Metabase only.
 
