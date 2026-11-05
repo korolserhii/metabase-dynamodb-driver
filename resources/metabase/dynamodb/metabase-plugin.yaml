@@ -1,6 +1,6 @@
 info:
   name: Metabase DynamoDB Driver
-  version: 0.2.2
+  version: 0.2.3
   description: Allows Metabase to query Amazon DynamoDB tables.
 contact-info:
   name: Korol Serhii
@@ -52,6 +52,13 @@ driver:
       helper-text: Cached table data older than this is re-read from DynamoDB before the next query.
       default: "10"
       placeholder: 10
+      required: false
+      visible-if:
+        advanced-options: true
+    - name: max-read-units-per-second
+      display-name: Maximum read units per second
+      helper-text: How fast a refresh may read a table, so reports never take the throughput your application needs. Empty means half of a provisioned table's read capacity, or 200 for on-demand tables.
+      placeholder: auto
       required: false
       visible-if:
         advanced-options: true

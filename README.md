@@ -27,6 +27,7 @@ Metabase only.
 | Maximum rows read per table (advanced) | Default 100,000. |
 | Maximum MB read per table (advanced) | Default 100. Whichever limit is reached first stops the read. |
 | Re-read tables after, minutes (advanced) | Default 10. |
+| Maximum read units per second (advanced) | Empty: half of a provisioned table's read capacity, or 200 for on-demand tables. A refresh is paced to this rate, so it never takes the throughput your application needs. |
 
 The IAM identity needs only read permissions. `ListTables` cannot be limited to specific tables; `DescribeTable` and
 `Scan` can, so list only the tables Metabase should see:
@@ -65,7 +66,8 @@ What this means for you:
 - **The query builder works**: filters, summaries, breakouts by date.
 - **SQL works** too. Quote table and attribute names exactly as in DynamoDB: `SELECT "status", COUNT(*) FROM "Orders" GROUP BY "status"`.
 - **Read-only.** Nothing is ever written to DynamoDB.
-- **Scans cost read capacity.** A table is scanned once per refresh interval, not once per query.
+- **Scans cost read capacity.** A table is scanned once per refresh interval, not once per query, and the scan is
+  paced (see "Maximum read units per second"), so a refresh does not throttle your application.
 - **Filters do not reduce reads.** Each refresh reads the whole table (up to the limits below); filters and date ranges
   are applied afterwards to the copy. A report on "last 7 days" still scans the table once per refresh interval.
 - **Large tables**: reading stops at "Maximum rows read per table" (100,000) or "Maximum MB read per table" (100 MB),
@@ -88,6 +90,25 @@ What this means for you:
 
 Items may have different attributes; every attribute that appears in a table becomes a column, empty where an item
 does not have it.
+
+## Pro
+
+The driver in this repository — the **Community Edition** — is free and open source under Apache 2.0, with no limit
+on how many Metabase instances use it. **Pro** is a separate commercial edition for teams whose tables outgrow it.
+Pro is **not released yet**: it is in early access, and the first trial users decide what ships first.
+
+| | Community (free) | Pro (planned) |
+|---|---|---|
+| Table size | up to 100,000 items / 100 MB per table | millions of items: copy on disk instead of Metabase memory, parallel reads |
+| Read cost | paced reads (half of provisioned capacity by default) | hourly and daily read budgets, incremental refresh |
+| Security | IAM keys or host role | hide or mask attributes; AssumeRole for other AWS accounts |
+| New Metabase versions | automatic compatibility updates | guaranteed compatibility and email support |
+
+**Planned price:** $299 per year for one production Metabase deployment (any number of replicas or containers);
+test, staging and development instances are included at no extra cost. **Free 30-day trial:**
+[request it here](https://github.com/korolserhii/metabase-dynamodb-driver/issues/new?template=pro-trial.yml) — tell us
+your table sizes and what you need, and you get the build as soon as it is ready.
+The Pro terms will be a separate commercial license; they never change the Apache 2.0 license of this repository.
 
 ## Building from source
 

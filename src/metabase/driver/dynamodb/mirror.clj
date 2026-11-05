@@ -33,6 +33,15 @@
 
 (def ^:private max-columns 500)
 
+(defonce ^:private pro-noted
+  ;; tables already mentioned in the Pro note: once per table per Metabase run, not on every refresh
+  (atom #{}))
+
+(def ^:private pro-note
+  (str "DynamoDB driver: table %s was cut off at the read limit (Community Edition). The Pro edition (early access) is built for large "
+       "tables: a copy on disk instead of Metabase memory, parallel reads and hourly and daily read budgets. "
+       "Request a free 30-day trial: https://github.com/korolserhii/metabase-dynamodb-driver#pro"))
+
 ;;; ------------------------------------------------ settings ------------------------------------------------------
 
 (defn- ->long [x default]
@@ -45,6 +54,16 @@
   "Maximum number of items read per table."
   [details]
   (max 1 (->long (:max-rows-per-table details) 100000)))
+
+(defn read-units-per-second
+  "How fast a refresh may read: the connection setting, or by default half of a provisioned table's read capacity
+  (on-demand tables: 200 units per second). Returns a positive number."
+  [details provisioned]
+  (let [v (->long (:max-read-units-per-second details) 0)]
+    (cond
+      (pos? v)    v
+      provisioned (max 1 (quot provisioned 2))
+      :else       200)))
 
 (defn max-bytes
   "Maximum amount of item data read per table, in bytes (setting is in MB)."
@@ -274,10 +293,14 @@
         mb      (quot (max-bytes details) (* 1024 1024))
         {:keys [items truncated? key-names cut-by bytes]}
         (ddb/with-client [client details]
-          (assoc (ddb/scan client table-name limit (max-bytes details))
+          (assoc (ddb/scan client table-name limit (max-bytes details)
+                           (read-units-per-second details (ddb/provisioned-read-units client table-name)))
                  :key-names (ddb/key-attribute-names client table-name)))
         columns (infer-columns key-names items)]
     (when truncated?
+      (when-not (contains? @pro-noted table-name)
+        (swap! pro-noted conj table-name)
+        (log/warn (format pro-note table-name)))
       (if (= cut-by :bytes)
         (log/warnf "DynamoDB table %s is larger than %d MB; Metabase sees the first %d items (%d MB). Raise \"Maximum MB read per table\" only if the Metabase JVM has enough memory: the in-memory copy takes several times the data size."
                    table-name mb (count items) (quot bytes (* 1024 1024)))
