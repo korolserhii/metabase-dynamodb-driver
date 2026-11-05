@@ -1,6 +1,6 @@
-name: Pro trial request
+name: Pro early access request
 description: Request a free 30-day trial of the DynamoDB driver Pro edition
-title: "Pro trial request"
+title: "Pro early access request"
 labels: ["pro-trial"]
 body:
   - type: markdown
@@ -13,6 +13,21 @@ body:
       placeholder: "e.g. 3 million items, about 2 GB"
     validations:
       required: true
+  - type: input
+    id: metabase
+    attributes:
+      label: Metabase version
+      placeholder: "e.g. v0.65.3"
+  - type: dropdown
+    id: deploy
+    attributes:
+      label: How Metabase runs
+      options: [Docker, JAR, Kubernetes, Other]
+  - type: dropdown
+    id: billing
+    attributes:
+      label: DynamoDB capacity mode of the large tables
+      options: [On-demand, Provisioned, Both, Not sure]
   - type: dropdown
     id: need
     attributes:

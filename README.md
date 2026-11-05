@@ -27,7 +27,7 @@ Metabase only.
 | Maximum rows read per table (advanced) | Default 100,000. |
 | Maximum MB read per table (advanced) | Default 100. Whichever limit is reached first stops the read. |
 | Re-read tables after, minutes (advanced) | Default 10. |
-| Maximum read units per second (advanced) | Empty: half of a provisioned table's read capacity, or 200 for on-demand tables. A refresh is paced to this rate, so it never takes the throughput your application needs. |
+| Maximum read units per second (advanced) | Empty: half of a provisioned table's read capacity, or 200 for on-demand tables. A refresh is paced to this rate, so it leaves most of a provisioned table's capacity to your application. This limits how fast the driver reads; it is not a cap on your AWS bill and not a guarantee against throttling. |
 
 The IAM identity needs only read permissions. `ListTables` cannot be limited to specific tables; `DescribeTable` and
 `Scan` can, so list only the tables Metabase should see:
@@ -67,7 +67,8 @@ What this means for you:
 - **SQL works** too. Quote table and attribute names exactly as in DynamoDB: `SELECT "status", COUNT(*) FROM "Orders" GROUP BY "status"`.
 - **Read-only.** Nothing is ever written to DynamoDB.
 - **Scans cost read capacity.** A table is scanned once per refresh interval, not once per query, and the scan is
-  paced (see "Maximum read units per second"), so a refresh does not throttle your application.
+  paced (see "Maximum read units per second"). Pacing limits how fast the driver reads, not what the scan costs: a
+  refresh still reads the whole table (up to the limits below), about half a read unit per 4 KB.
 - **Filters do not reduce reads.** Each refresh reads the whole table (up to the limits below); filters and date ranges
   are applied afterwards to the copy. A report on "last 7 days" still scans the table once per refresh interval.
 - **Large tables**: reading stops at "Maximum rows read per table" (100,000) or "Maximum MB read per table" (100 MB),
@@ -105,7 +106,7 @@ Pro is **not released yet**: it is in early access, and the first trial users de
 | New Metabase versions | automatic compatibility updates | guaranteed compatibility and email support |
 
 **Planned price:** $299 per year for one production Metabase deployment (any number of replicas or containers);
-test, staging and development instances are included at no extra cost. **Free 30-day trial:**
+test, staging and development instances are included at no extra cost. **Early access (free 30-day trial when Pro is ready):**
 [request it here](https://github.com/korolserhii/metabase-dynamodb-driver/issues/new?template=pro-trial.yml) — tell us
 your table sizes and what you need, and you get the build as soon as it is ready.
 The Pro terms will be a separate commercial license; they never change the Apache 2.0 license of this repository.

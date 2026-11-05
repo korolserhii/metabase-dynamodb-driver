@@ -57,7 +57,7 @@ driver:
         advanced-options: true
     - name: max-read-units-per-second
       display-name: Maximum read units per second
-      helper-text: How fast a refresh may read a table, so reports never take the throughput your application needs. Empty means half of a provisioned table's read capacity, or 200 for on-demand tables.
+      helper-text: How fast a refresh may read a table, so a refresh leaves most of a provisioned table's capacity to your application. Empty means half of a provisioned table's read capacity, or 200 for on-demand tables.
       placeholder: auto
       required: false
       visible-if:
