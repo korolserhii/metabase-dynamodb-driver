@@ -27,6 +27,7 @@ Metabase only.
 | Maximum rows read per table (advanced) | Default 100,000. |
 | Maximum MB read per table (advanced) | Default 100. Whichever limit is reached first stops the read. |
 | Re-read tables after, minutes (advanced) | Default 10. |
+| Maximum read units per second (advanced) | Empty: half of a provisioned table's read capacity, or 200 for on-demand tables. A refresh is paced to this rate, so it never takes the throughput your application needs. |
 
 The IAM identity needs only read permissions. `ListTables` cannot be limited to specific tables; `DescribeTable` and
 `Scan` can, so list only the tables Metabase should see:
@@ -65,7 +66,8 @@ What this means for you:
 - **The query builder works**: filters, summaries, breakouts by date.
 - **SQL works** too. Quote table and attribute names exactly as in DynamoDB: `SELECT "status", COUNT(*) FROM "Orders" GROUP BY "status"`.
 - **Read-only.** Nothing is ever written to DynamoDB.
-- **Scans cost read capacity.** A table is scanned once per refresh interval, not once per query.
+- **Scans cost read capacity.** A table is scanned once per refresh interval, not once per query, and the scan is
+  paced (see "Maximum read units per second"), so a refresh does not throttle your application.
 - **Filters do not reduce reads.** Each refresh reads the whole table (up to the limits below); filters and date ranges
   are applied afterwards to the copy. A report on "last 7 days" still scans the table once per refresh interval.
 - **Large tables**: reading stops at "Maximum rows read per table" (100,000) or "Maximum MB read per table" (100 MB),
@@ -97,7 +99,7 @@ access: the first trial users decide what ships first.
 | | Free | Pro |
 |---|---|---|
 | Table size | up to 100,000 items / 100 MB per table | millions of items: copy on disk instead of Metabase memory, parallel reads |
-| Read cost | whole table once per refresh | read-capacity budget, so reports never slow down production |
+| Read cost | paced reads (half of provisioned capacity by default) | hourly and daily read budgets, incremental refresh |
 | Security | IAM keys or host role | hide or mask attributes; AssumeRole for other AWS accounts |
 | New Metabase versions | automatic compatibility updates | guaranteed compatibility and email support |
 
