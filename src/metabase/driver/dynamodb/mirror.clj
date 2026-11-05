@@ -33,6 +33,10 @@
 
 (def ^:private max-columns 500)
 
+(defonce ^:private pro-noted
+  ;; tables already mentioned in the Pro note: once per table per Metabase run, not on every refresh
+  (atom #{}))
+
 (def ^:private pro-note
   (str "DynamoDB driver: a table was cut off at the read limit. The Pro edition (early access) is built for large "
        "tables: a copy on disk instead of Metabase memory, parallel reads and hourly and daily read budgets. "
@@ -294,7 +298,9 @@
                  :key-names (ddb/key-attribute-names client table-name)))
         columns (infer-columns key-names items)]
     (when truncated?
-      (log/warn pro-note)
+      (when-not (contains? @pro-noted table-name)
+        (swap! pro-noted conj table-name)
+        (log/warn pro-note))
       (if (= cut-by :bytes)
         (log/warnf "DynamoDB table %s is larger than %d MB; Metabase sees the first %d items (%d MB). Raise \"Maximum MB read per table\" only if the Metabase JVM has enough memory: the in-memory copy takes several times the data size."
                    table-name mb (count items) (quot bytes (* 1024 1024)))

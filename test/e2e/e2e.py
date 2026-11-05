@@ -312,6 +312,28 @@ def main():
         fail(f"count(big-docs) with a 1 MB limit: expected 1..49, got {r}")
     log(f"MB limit works: 50 items with default limits, {r[0][0]} with 1 MB")
 
+    # 10. the row limit cuts a table at exactly that many items; paced reads still finish
+    #     (a trailing slash in the endpoint gives this database its own copy)
+    capped = api("POST", "/api/database", {
+        "engine": "dynamodb",
+        "name": "DynamoDB e2e row limit",
+        "details": {"region": "us-east-1", "endpoint": "http://127.0.0.1:8000/",
+                    "access-key-id": "dummy", "secret-access-key": "dummy",
+                    "max-rows-per-table": 7, "max-read-units-per-second": 100},
+    })
+    orders_capped = sync_table(capped["id"], "Orders")
+    r = rows(run({"database": capped["id"], "type": "query",
+                  "query": {"source-table": orders_capped["id"], "aggregation": [["count"]]}}))
+    if r[0][0] != 7:
+        fail(f"count(Orders) with a 7-row limit: expected 7, got {r}")
+    started = time.time()
+    big_capped = sync_table(capped["id"], "big-docs")
+    r = rows(run({"database": capped["id"], "type": "query",
+                  "query": {"source-table": big_capped["id"], "aggregation": [["count"]]}}))
+    if r[0][0] != 7:
+        fail(f"count(big-docs) with a 7-row limit at 100 read units/s: expected 7, got {r}")
+    log(f"row limit works (7 of 31 and 7 of 50); paced read of big-docs took {time.time() - started:.1f} s")
+
     log("ALL CHECKS PASSED")
 
 
