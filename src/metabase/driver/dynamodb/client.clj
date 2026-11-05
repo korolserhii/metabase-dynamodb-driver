@@ -130,7 +130,7 @@
   attribute name -> AttributeValue. The byte limit is checked per page (up to 1000 items), so it can be exceeded by
   at most one page. `max-units-per-second` paces the scan: after each page the driver waits until the read capacity
   used so far fits that rate, so a refresh never takes all of a table's throughput from the application.
-  It returns :read-units, the capacity actually used."
+  It returns :read-units, the capacity used (as reported by DynamoDB, or estimated from the data read)."
   ([client table-name max-items max-bytes]
    (scan client table-name max-items max-bytes nil))
   ([^DynamoDbClient client ^String table-name max-items max-bytes max-units-per-second]
@@ -147,11 +147,15 @@
           page  (.items resp)
           items (reduce conj! items page)
           n     (+ n (count page))
-          bytes (+ bytes (long (reduce + 0 (map item-size page))))
+          page-bytes (long (reduce + 0 (map item-size page)))
+          bytes (+ bytes page-bytes)
           lek   (.lastEvaluatedKey resp)
           more? (boolean (and (.hasLastEvaluatedKey resp) (seq lek)))
           ^ConsumedCapacity cc (.consumedCapacity resp)
-          units (+ units (double (or (when cc (.capacityUnits cc)) 0.0)))]
+          ;; DynamoDB reports the capacity used; when it does not (DynamoDB Local), estimate it the way DynamoDB
+          ;; counts an eventually consistent read: half a unit per 4 KB read.
+          units (+ units (double (or (when cc (.capacityUnits cc))
+                                     (/ (Math/ceil (/ (double page-bytes) 4096.0)) 2.0))))]
       (when (and more? (< n max-items) (< bytes max-bytes)
                  max-units-per-second (pos? (double max-units-per-second)))
         (let [due-ms  (long (* 1000.0 (/ units (double max-units-per-second))))

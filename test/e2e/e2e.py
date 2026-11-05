@@ -334,6 +334,37 @@ def main():
         fail(f"count(big-docs) with a 7-row limit at 100 read units/s: expected 7, got {r}")
     log(f"row limit works (7 of 31 and 7 of 50); paced read of big-docs took {time.time() - started:.1f} s")
 
+    # 11. pacing: big-docs is ~5 MB, read in several 1 MB pages (~640 read units). At 50 units/s the pauses between
+    #     pages must stretch the read to several seconds; all 50 items must still arrive.
+    started = time.time()
+    paced = api("POST", "/api/database", {
+        "engine": "dynamodb",
+        "name": "DynamoDB e2e paced",
+        "details": {"region": "us-east-1", "endpoint": "http://localhost:8000/",
+                    "access-key-id": "dummy", "secret-access-key": "dummy", "max-read-units-per-second": 50},
+    })
+    big_paced = sync_table(paced["id"], "big-docs")
+    r = rows(run({"database": paced["id"], "type": "query",
+                  "query": {"source-table": big_paced["id"], "aggregation": [["count"]]}}))
+    took = time.time() - started
+    if r[0][0] != 50:
+        fail(f"count(big-docs) with paced reads: expected 50, got {r}")
+    if took < 5:
+        fail(f"paced read of big-docs at 50 units/s took {took:.1f} s; expected at least 5 s (pauses between pages)")
+    log(f"pacing works: 50 items of big-docs at 50 read units/s took {took:.1f} s")
+
+    # 12. the Pro note: logged for both limits (rows: Orders, MB: big-docs), once per table, not on every read
+    sync_table(capped["id"], "Orders")
+    rows(run({"database": capped["id"], "type": "native", "native": {"query": 'SELECT COUNT(*) FROM "Orders"'}}))
+    logs = api("GET", "/api/util/logs") or []
+    notes = [str(e.get("msg", "")) for e in logs if "Pro edition" in str(e.get("msg", ""))]
+    noted = [m.split("table ", 1)[1].split(" was cut off", 1)[0] for m in notes if " was cut off" in m]
+    if "Orders" not in noted or "big-docs" not in noted:
+        fail(f"Pro note expected for Orders (row limit) and big-docs (MB limit), got {noted}")
+    if len(noted) != len(set(noted)):
+        fail(f"Pro note repeated for a table: {noted}")
+    log(f"Pro note logged once per cut-off table: {sorted(noted)}")
+
     log("ALL CHECKS PASSED")
 
 
