@@ -5,6 +5,7 @@ http://localhost:3000. Exits non-zero on the first failure.
 """
 
 import json
+import os
 import sys
 import time
 import urllib.error
@@ -356,8 +357,13 @@ def main():
     # 12. the Pro note: logged for both limits (rows: Orders, MB: big-docs), once per table, not on every read
     sync_table(capped["id"], "Orders")
     rows(run({"database": capped["id"], "type": "native", "native": {"query": 'SELECT COUNT(*) FROM "Orders"'}}))
-    logs = api("GET", "/api/util/logs") or []
-    notes = [str(e.get("msg", "")) for e in logs if "Pro edition" in str(e.get("msg", ""))]
+    # Metabase's own log file (the workflow starts Metabase with output to ci-logs/metabase.log)
+    log_path = os.environ.get("METABASE_LOG", "ci-logs/metabase.log")
+    try:
+        with open(log_path, encoding="utf-8", errors="replace") as f:
+            notes = [line for line in f if "Pro edition" in line]
+    except OSError as e:
+        fail(f"cannot read the Metabase log {log_path}: {e}")
     noted = [m.split("table ", 1)[1].split(" was cut off", 1)[0] for m in notes if " was cut off" in m]
     if "Orders" not in noted or "big-docs" not in noted:
         fail(f"Pro note expected for Orders (row limit) and big-docs (MB limit), got {noted}")
