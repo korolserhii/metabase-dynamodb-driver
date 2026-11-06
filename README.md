@@ -121,6 +121,7 @@ Pro is **not released yet**: it is in early access, and the first trial users de
 test, staging and development instances are included at no extra cost. **Early access (free 30-day trial when Pro is ready):**
 [request it here](https://github.com/korolserhii/metabase-dynamodb-driver/issues/new?template=pro-trial.yml) — tell us
 your table sizes and what you need, and you get the build as soon as it is ready.
+Prefer not to post details publicly? Email **korolserhii.dev@gmail.com** instead.
 The Pro terms will be a separate commercial license; they never change the Apache 2.0 license of this repository.
 
 ## Building from source

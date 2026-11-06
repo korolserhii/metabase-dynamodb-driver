@@ -5,7 +5,7 @@ labels: ["pro-trial"]
 body:
   - type: markdown
     attributes:
-      value: "Thanks! A few answers help decide what Pro does first. Do not paste credentials or table contents."
+      value: "Thanks! A few answers help decide what Pro does first. Do not paste credentials or table contents. We reply in this issue, so you get a GitHub notification. This issue is public; for a private conversation email korolserhii.dev@gmail.com instead."
   - type: input
     id: size
     attributes:
