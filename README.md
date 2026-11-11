@@ -26,7 +26,7 @@ docker run -d -p 3000:3000 --name metabase -v ~/metabase-plugins:/plugins metaba
 The official image reads drivers from `/plugins` (`MB_PLUGINS_DIR`). If the folder already has other drivers, keep
 them there: the mount replaces the whole directory.
 
-Tested with Metabase **v0.65.4** (automated end-to-end tests against DynamoDB Local). Metabase Cloud does not allow community drivers, so this works with self-hosted
+Tested with Metabase **v0.65.4.1** (automated end-to-end tests against DynamoDB Local). Metabase Cloud does not allow community drivers, so this works with self-hosted
 Metabase only.
 
 ## Connecting
