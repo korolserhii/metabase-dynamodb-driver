@@ -1,6 +1,6 @@
 info:
   name: Metabase DynamoDB Driver
-  version: 0.2.8
+  version: 0.2.9
   description: Allows Metabase to query Amazon DynamoDB tables.
 contact-info:
   name: Korol Serhii
