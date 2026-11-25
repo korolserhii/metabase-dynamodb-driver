@@ -1,3 +1,3 @@
-Compatibility update: the driver now builds and passes its automated end-to-end tests with **Metabase v0.65.6.4** (previously v0.65.6.3). No feature changes.
+Compatibility update: the driver now builds and passes its automated end-to-end tests with **Metabase v0.65.7.1** (previously v0.65.6.4). No feature changes.
 
 **Install:** download `dynamodb.metabase-driver.jar` below, put it in Metabase's `plugins/` directory (replacing the old jar), restart Metabase. Setup details are in the [README](https://github.com/korolserhii/metabase-dynamodb-driver#readme).
